@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { RefreshCw, Trophy, User, Zap } from 'lucide-react';
 
 function App() {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [isXNext, setIsXNext] = useState(true);
-  const [scores, setScores] = useState({ x: 0, o: 0, ties: 0 });
 
   const winningCombinations = [
-    [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-    [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-    [0, 4, 8], [2, 4, 6]             // Diagonals
+    [0, 1, 2], [3, 4, 5], [6, 7, 8],
+    [0, 3, 6], [1, 4, 7], [2, 5, 8],
+    [0, 4, 8], [2, 4, 6]
   ];
 
   const calculateWinner = (squares) => {
@@ -29,18 +27,9 @@ function App() {
 
   const handleClick = (index) => {
     if (board[index] || winner) return;
-
     const newBoard = [...board];
     newBoard[index] = isXNext ? 'X' : 'O';
     setBoard(newBoard);
-    
-    const nextWinInfo = calculateWinner(newBoard);
-    if (nextWinInfo) {
-      setScores(prev => ({ ...prev, [nextWinInfo.winner.toLowerCase()]: prev[nextWinInfo.winner.toLowerCase()] + 1 }));
-    } else if (!nextWinInfo && newBoard.every((sq) => sq !== null)) {
-      setScores(prev => ({ ...prev, ties: prev.ties + 1 }));
-    }
-
     setIsXNext(!isXNext);
   };
 
@@ -50,58 +39,32 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-height-screen p-4 select-none">
-      {/* Header Container */}
-      <div className="text-center mb-8 animate-fade-in">
-        <h1 className="text-5xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-indigo-500 flex items-center justify-center gap-2">
-          <Zap className="text-cyan-400 fill-cyan-400 animate-pulse" size={36} />
-          X-O-X ARENA
-        </h1>
-        <p className="text-slate-400 mt-2 text-sm uppercase tracking-widest font-medium">Cyberpunk Edition</p>
-      </div>
-
-      {/* Scoreboard Metadata Layout */}
-      <div className="grid grid-cols-3 gap-4 w-full max-w-md mb-6 text-center">
-        <div className="bg-slate-800/60 border border-cyan-500/30 rounded-xl p-3 backdrop-blur-sm">
-          <div className="flex items-center justify-center gap-1 text-cyan-400 font-semibold text-xs uppercase">
-            <User size={14} /> Player X
-          </div>
-          <p className="text-2xl font-black text-white mt-1">{scores.x}</p>
-        </div>
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-3 backdrop-blur-sm">
-          <div className="text-slate-400 font-semibold text-xs uppercase">Ties</div>
-          <p className="text-2xl font-black text-white mt-1">{scores.ties}</p>
-        </div>
-        <div className="bg-slate-800/60 border border-rose-500/30 rounded-xl p-3 backdrop-blur-sm">
-          <div className="flex items-center justify-center gap-1 text-rose-400 font-semibold text-xs uppercase">
-            <User size={14} /> Player O
-          </div>
-          <p className="text-2xl font-black text-white mt-1">{scores.o}</p>
-        </div>
-      </div>
-
-      {/* Status Bar */}
-      <div className="mb-6 h-8 text-center">
+    // Deep dark purple-blue background to make neon pop
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#110B29] p-4 select-none font-sans">
+      
+      {/* Dynamic Header State */}
+      <div className="mb-8 h-10 text-center flex items-center justify-center">
         {winner ? (
-          <div className="flex items-center gap-2 text-xl font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-6 py-1 rounded-full animate-bounce">
-            <Trophy size={18} /> Winner: {winner}
+          <div className="text-3xl font-black text-white drop-shadow-[0_0_10px_#10B981] tracking-wider uppercase animate-pulse">
+            Winner: Player {winner}
           </div>
         ) : isTie ? (
-          <div className="text-xl font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 px-6 py-1 rounded-full">
-            It's a Stalemate!
+          <div className="text-3xl font-black text-white drop-shadow-[0_0_10px_#F59E0B] tracking-wider uppercase">
+            Draw Match
           </div>
         ) : (
-          <div className="text-lg font-medium text-slate-300">
-            Next Turn:{' '}
-            <span className={`font-black ${isXNext ? 'text-cyan-400' : 'text-rose-400'}`}>
+          <div className="text-xl font-bold text-slate-400 tracking-wide uppercase">
+            Turn:{' '}
+            <span className={`font-black ${isXNext ? 'text-[#FF2A6D] drop-shadow-[0_0_8px_#FF2A6D]' : 'text-[#05D9E8] drop-shadow-[0_0_8px_#05D9E8]'}`}>
               {isXNext ? 'X' : 'O'}
             </span>
           </div>
         )}
       </div>
 
-      {/* Active Interactive Game Grid */}
-      <div className="grid grid-cols-3 gap-3 p-3 bg-slate-900/80 border border-slate-700/50 rounded-2xl shadow-2xl shadow-indigo-950/50 w-full max-w-md aspect-square">
+      {/* The 3x3 Grid Matching the Image Design exactly */}
+      {/* We use a solid dark background with a gap, and a white border around the wrapper to simulate those clean white dividers */}
+      <div className="grid grid-cols-3 gap-2 bg-white p-2 rounded-lg shadow-[0_0_30px_rgba(5,217,232,0.15)] w-full max-w-[340px] aspect-square">
         {board.map((square, index) => {
           const isWinningSquare = winningLine.includes(index);
           return (
@@ -109,34 +72,38 @@ function App() {
               key={index}
               onClick={() => handleClick(index)}
               className={`
-                relative text-5xl font-black rounded-xl transition-all duration-200 ease-out outline-none
-                ${!square && !winner ? 'hover:bg-slate-800/50 hover:scale-[1.02] cursor-pointer' : 'cursor-default'}
-                ${isWinningSquare 
-                  ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 scale-[0.98]' 
-                  : 'bg-slate-800/30 border border-slate-700/40 text-slate-200'}
+                relative bg-[#161031] text-6xl font-black transition-all duration-150 outline-none flex items-center justify-center rounded-sm
+                ${!square && !winner ? 'hover:bg-[#211947] cursor-pointer' : 'cursor-default'}
+                ${isWinningSquare ? 'bg-[#251b54]' : ''}
               `}
             >
+              {/* Thick Neon Text Styling using text-shadow drop effects */}
               <span className={`
-                transition-all duration-300 transform inline-block
-                ${square ? 'scale-100 opacity-100' : 'scale-50 opacity-0'}
-                ${square === 'X' && !isWinningSquare ? 'text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]' : ''}
-                ${square === 'O' && !isWinningSquare ? 'text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]' : ''}
+                transition-transform duration-200 transform font-sans font-extrabold leading-none tracking-tighter
+                ${square ? 'scale-100 opacity-100' : 'scale-70 opacity-0'}
+                ${square === 'X' ? 'text-white drop-shadow-[0_0_12px_#FF2A6D] [text-shadow:0_0_4px_#FF2A6D,0_0_15px_#FF2A6D]' : ''}
+                ${square === 'O' ? 'text-white drop-shadow-[0_0_12px_#05D9E8] [text-shadow:0_0_4px_#05D9E8,0_0_15px_#05D9E8]' : ''}
               `}>
                 {square}
               </span>
+
+              {/* Vertical neon win overlay line effect across the whole match if column won */}
+              {isWinningSquare && (
+                <div className="absolute inset-0 bg-white/5 mix-blend-overlay border border-white/20 rounded-sm" />
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Controller Buttons */}
+      {/* Control Option */}
       <button
         onClick={resetGame}
-        className="mt-8 flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-95 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all duration-150 tracking-wide cursor-pointer"
+        className="mt-10 bg-[#1A123C] hover:bg-[#251B54] active:scale-95 text-white font-bold tracking-widest text-xs uppercase py-3.5 px-10 rounded-full border-2 border-white/20 transition-all cursor-pointer shadow-md shadow-black/40 hover:border-white/50"
       >
-        <RefreshCw size={18} />
-        Reset Arena
+        Restart Battle
       </button>
+
     </div>
   );
 }

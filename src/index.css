@@ -4,8 +4,7 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
-  min-height: 100vh;
-  color: #f8fafc;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: #190e42; /* Matches the background in the image */
 }
