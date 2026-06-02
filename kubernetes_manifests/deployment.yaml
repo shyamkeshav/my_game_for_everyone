@@ -21,10 +21,10 @@ spec:
       labels:
         app: xox-game
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 101 
-        fsGroup: 101
+      #securityContext:
+        #runAsNonRoot: true
+        #runAsUser: 101 
+        #fsGroup: 101
       containers:
       - name: xox-game
         image: IMAGE_PLACEHOLDER # Dynamically replaced by GitHub Actions with your ECR image tag
