@@ -53,7 +53,7 @@ jobs:
         kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
         
         # Swap out the token placeholder in your deployment file with the exact ECR Image URI
-        sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" kubernetes_manifests/charts/deployment.yaml
+        sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" kubernetes_manifests/deployment.yaml
         
         # Apply the entire declaration file to your EKS control plane
-        kubectl apply -f kubernetes_manifests/charts/deployment.yaml
+        kubectl apply -f kubernetes_manifests/deployment.yaml
