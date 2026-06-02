@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xox-game
+  namespace: production # Production resources should always live in a dedicated namespace
+  labels:
+    app.kubernetes.io/name: xox-game
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/managed-by: github-actions
+spec:
+  replicas: 2 # Production baseline defaults to at least 2 replicas across availability zones
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%       # Spin up 25% new pods first
+      maxUnavailable: 0%  # DO NOT terminate old pods until new ones are healthy
+  selector:
+    matchLabels:
+      app: xox-game
+  template:
+    metadata:
+      labels:
+        app: xox-game
+    spec:
+      # --- SECURITY CONTEXT HARDENING ---
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101 # Standard non-root Nginx UID
+        fsGroup: 101
+      containers:
+      - name: xox-game
+        image: parellishyamsunder/xox-game:latest 
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80
+          name: http
+        
+        # --- HEALTH MONITORING PROBES ---
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 20
+
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "100m"
+          limits:
+            memory: "64Mi"
+            cpu: "200m"
+
+---
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: xox-game-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: xox-game
+  minReplicas: 2 # Scale from 2 to 5 for production high-availability
+  maxReplicas: 5
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75 # Safer threshold for real-world scaling triggers
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: xox-game-service
+  namespace: production
+  labels:
+    app.kubernetes.io/name: xox-game
+spec:
+  type: ClusterIP # Production Standard: Keeps ports internal, exposed via an Ingress Controller
+  selector:
+    app: xox-game
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
