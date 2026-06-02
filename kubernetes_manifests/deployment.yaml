@@ -2,18 +2,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: xox-game
-  namespace: production # Production resources should always live in a dedicated namespace
+  namespace: production
   labels:
     app.kubernetes.io/name: xox-game
     app.kubernetes.io/component: frontend
     app.kubernetes.io/managed-by: github-actions
 spec:
-  replicas: 2 # Production baseline defaults to at least 2 replicas across availability zones
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 25%       # Spin up 25% new pods first
-      maxUnavailable: 0%  # DO NOT terminate old pods until new ones are healthy
+      maxSurge: 1          # Spin up exactly 1 new pod before dropping old ones
+      maxUnavailable: 0    # Ensures baseline capacity is always functional
   selector:
     matchLabels:
       app: xox-game
@@ -22,20 +21,18 @@ spec:
       labels:
         app: xox-game
     spec:
-      # --- SECURITY CONTEXT HARDENING ---
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101 # Standard non-root Nginx UID
+        runAsUser: 101 
         fsGroup: 101
       containers:
       - name: xox-game
-        image: parellishyamsunder/xox-game:latest 
+        image: IMAGE_PLACEHOLDER # Dynamically replaced by GitHub Actions with your ECR image tag
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
           name: http
         
-        # --- HEALTH MONITORING PROBES ---
         readinessProbe:
           httpGet:
             path: /
@@ -69,7 +66,7 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: xox-game
-  minReplicas: 2 # Scale from 2 to 5 for production high-availability
+  minReplicas: 2 
   maxReplicas: 5
   metrics:
   - type: Resource
@@ -77,7 +74,7 @@ spec:
       name: cpu
       target:
         type: Utilization
-        averageUtilization: 75 # Safer threshold for real-world scaling triggers
+        averageUtilization: 75 
 
 ---
 
@@ -89,7 +86,7 @@ metadata:
   labels:
     app.kubernetes.io/name: xox-game
 spec:
-  type: ClusterIP # Production Standard: Keeps ports internal, exposed via an Ingress Controller
+  type: ClusterIP 
   selector:
     app: xox-game
   ports:
@@ -97,3 +94,28 @@ spec:
     targetPort: 80
     protocol: TCP
     name: http
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: xox-game-ingress
+  namespace: production
+  annotations:
+    # Signals the AWS Load Balancer Controller to build a public ALB
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    # Directs traffic over the VPC network straight to pod private IPs
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: xox-game-service
+                port:
+                  number: 80

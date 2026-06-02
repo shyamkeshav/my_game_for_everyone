@@ -1,0 +1,41 @@
+name: CD Teardown Application
+
+on:
+  workflow_dispatch: # Allows you to manually trigger this cleanup from the GitHub UI
+
+jobs:
+  teardown:
+    name: Clean K8s Resources
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Update Kubeconfig Context for EKS
+      run: |
+        aws eks update-kubeconfig --name game-cluster --region ap-south-1
+
+    - name: Safely Delete Resources from EKS
+      run: |
+        # Check if the deployment file exists, then delete resources to trigger AWS ALB teardown
+        if [ -f kubernetes_manifests/charts/deployment.yaml ]; then
+          # We use || true so the pipeline doesn't crash if some resources are already deleted
+          kubectl delete -f kubernetes_manifests/charts/deployment.yaml || true
+        else
+          echo "deployment.yaml not found! Deleting resources by target fallback..."
+          kubectl delete ingress xox-game-ingress -n production || true
+          kubectl delete service xox-game-service -n production || true
+          kubectl delete deployment xox-game -n production || true
+          kubectl delete hpa xox-game-hpa -n production || true
+        fi
+        
+        echo "Waiting 2 minutes to ensure AWS completely de-provisions the Load Balancer..."
+        sleep 120

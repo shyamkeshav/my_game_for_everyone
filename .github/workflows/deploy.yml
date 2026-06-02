@@ -1,0 +1,59 @@
+name: CI/CD Deploy to EKS
+
+on:
+  push:
+    branches:
+      - main # Triggers the pipeline whenever code is merged into main
+
+jobs:
+  deploy:
+    name: Build, Push, and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, Tag, and Push Image to Amazon ECR
+      id: build-image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: game-repo # Matches your Terraform ECR name
+        IMAGE_TAG: ${{ github.sha }} # Uses the unique Git Commit SHA as the version tag
+      run: |
+        # Build the container using your repository's local Dockerfile
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        
+        # Push the container image to your secure ECR repository
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+        # Export the full image URI variable for subsequent steps
+        echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+    - name: Update Kubeconfig Context for EKS
+      run: |
+        aws eks update-kubeconfig --name game-cluster --region ap-south-1
+
+    - name: Deploy Manifests to AWS EKS
+      env:
+        IMAGE_URI: ${{ steps.build-image.outputs.image_uri }}
+      run: |
+        # Ensure the production namespace exists in the cluster before applying workloads
+        kubectl create namespace production --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Swap out the token placeholder in your deployment file with the exact ECR Image URI
+        sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_URI|g" deployment.yaml
+        
+        # Apply the entire declaration file to your EKS control plane
+        kubectl apply -f kubernetes_manifests/charts/deployment.yaml
