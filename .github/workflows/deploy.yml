@@ -1,9 +1,10 @@
 name: CI/CD Deploy to EKS
 
 on:
-  push:
-    branches:
-      - main # Triggers the pipeline whenever code is merged into main
+  #push:
+    #branches:
+      #- main # Triggers the pipeline whenever code is merged into main
+  workflow_dispatch: # Allows you to manually trigger this cleanup from the GitHub UI    
 
 jobs:
   deploy:
