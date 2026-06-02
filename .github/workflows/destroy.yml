@@ -26,9 +26,9 @@ jobs:
     - name: Safely Delete Resources from EKS
       run: |
         # Check if the deployment file exists, then delete resources to trigger AWS ALB teardown
-        if [ -f kubernetes_manifests/charts/deployment.yaml ]; then
+        if [ -f kubernetes_manifests/deployment.yaml ]; then
           # We use || true so the pipeline doesn't crash if some resources are already deleted
-          kubectl delete -f kubernetes_manifests/charts/deployment.yaml || true
+          kubectl delete -f kubernetes_manifests/deployment.yaml || true
         else
           echo "deployment.yaml not found! Deleting resources by target fallback..."
           kubectl delete ingress xox-game-ingress -n production || true
