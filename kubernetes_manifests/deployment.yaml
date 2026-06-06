@@ -106,7 +106,7 @@ metadata:
     # Signals the AWS Load Balancer Controller to build a public ALB
     alb.ingress.kubernetes.io/scheme: internet-facing
     # Directs traffic over the VPC network straight to pod private IPs
-    alb.ingress.kubernetes.io/target-type: instance
+    alb.ingress.kubernetes.io/target-type: ip
 spec:
   ingressClassName: alb
   rules:
